@@ -6,6 +6,9 @@ import pandas as pd
 import cv2
 from collections import defaultdict
 import torch
+import h5py
+import os
+from sklearn.model_selection import train_test_split
 
 def load_files(dataset_path):
     """
@@ -17,20 +20,27 @@ def load_files(dataset_path):
         List contains split datasets for K-Fold cross-validation
     """
     dataset = {}
-    dataset['train'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "training")) for file in files if file.endswith(".tif")]
-    dataset['test'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "testing")) for file in files if file.endswith(".tif")]
+    dataset['train'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "training")) for file in files if file.endswith(".h5")]
+    dataset['test'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "testing")) for file in files if file.endswith(".h5")]
 
     return dataset
 
-def Get_train_valid_set(Train_set, train_percentage=0.9):
-    indexes = np.arange(len(Train_set))
-    random.shuffle(indexes)
 
-    num_train = int(train_percentage * len(Train_set))
-    train_index, test_index = np.asarray(indexes[:num_train]), np.asarray(indexes[num_train:])
+def Get_train_valid_Path(Train_set, train_percentage=0.9):
+    # random.seed(12321)
+    # indexes = np.arange(len(Train_set))
+    # random.shuffle(indexes)
+    #
+    # num_train = int(train_percentage * len(Train_set))
+    # train_index, test_index = np.asarray(indexes[:num_train]), np.asarray(indexes[num_train:])
+    #
+    # Model_Train = [Train_set[i] for i in train_index]
+    # Model_Val = [Train_set[j] for j in test_index]
 
-    Model_Train = [Train_set[i] for i in train_index]
-    Model_Val = [Train_set[j] for j in test_index]
+    #Model_Train,Model_Val = train_test_split(Train_set, test_size = 0.1, random_state = 12321,stratify=True)
+    train_labels = [int(1) if "tumor" in os.path.splitext(os.path.basename(path))[0] else int(0) for path in Train_set]
+    Model_Train, Model_Val, y_train, y_test = train_test_split(Train_set, train_labels, test_size=1-train_percentage,
+                                                        random_state=12321, stratify=train_labels)
 
     return Model_Train, Model_Val
 
@@ -45,12 +55,8 @@ def detect_tissue(image_path):
             return wsi_image,bounding_boxes,image_open,level_used
 
 
-def load_bags(wsi_path, level,train, patch_size, stride,csv_file=None):
+def load_bags(wsi_path, train):
 
-        wsi_image,bounding_boxes,image_open,level_used=detect_tissue(wsi_path)
-
-        mag_factor_used = pow(2, level_used - level)
-        mag_factor = pow(2, level)
 
         class_name = os.path.basename(wsi_path).split(".")[0]
         coords=[]
@@ -61,40 +67,10 @@ def load_bags(wsi_path, level,train, patch_size, stride,csv_file=None):
             label=references[1].loc[references[0]==class_name].values.tolist()[0]
             bag_label = (int(1) if "Tumor" in label else int(0))
 
-        for bounding_box in bounding_boxes:
+        with h5py.File(wsi_path, "r") as hdf5_file:
 
-                                b_x_start = int(bounding_box[0])*mag_factor_used
-                                b_y_start = int(bounding_box[1])*mag_factor_used
-                                b_x_end = (int(bounding_box[0]) + int(bounding_box[2]))*mag_factor_used
-                                b_y_end = (int(bounding_box[1]) + int(bounding_box[3]))*mag_factor_used
-
-                                X = np.arange(b_x_start, b_x_end, step=stride)
-                                Y = np.arange(b_y_start, b_y_end, step=stride)
-
-                                for w_pos, x_width_ in enumerate(X):
-                                    for h_pos, y_height_ in enumerate(Y):
-
-                                                x_coord = x_width_ * mag_factor
-                                                y_coord = y_height_ * mag_factor
-
-                                                patch = wsi_image.read_region((x_coord, y_coord),level,
-                                                                              (patch_size, patch_size))
-
-                                                patch_array = np.array(patch)
-
-                                                patch_hsv = cv2.cvtColor(patch_array, cv2.COLOR_RGB2HSV)
-
-                                                lower_red = np.array([20, 20, 20])
-
-                                                upper_red = np.array([200, 200, 200])
-
-                                                mask = cv2.inRange(patch_hsv, lower_red, upper_red)
-
-                                                white_pixel_cnt = cv2.countNonZero(mask)
-
-                                                if white_pixel_cnt >= ((patch_size * patch_size) * 0.5):
-
-                                                    coords.append((int(((x_width_) + (patch_size / 2))), int(((y_height_) + (patch_size / 2)))))
+                h5_coords = hdf5_file['coords'][:]
+                coords.append(h5_coords)
 
         return coords, int(bag_label)
 
@@ -106,7 +82,7 @@ def create_dict(filenames, level, train, patch_size, stride, dict_name,csv_file=
         label_list=[]
         for file in filenames:
 
-            coords, label=load_bags(file, level=level, train=train, patch_size=stride, stride=patch_size, csv_file=csv_file)
+            coords, label=load_bags(file,train=train, csv_file=csv_file)
             file_list.append(file)
             coord_list.append(coords)
             label_list.append(label)
@@ -122,7 +98,7 @@ def create_dict(filenames, level, train, patch_size, stride, dict_name,csv_file=
 if __name__ == '__main__':
 
     csv_file = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/testing/reference.csv"
-    dataset_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16"
+    dataset_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches"
 
     dataset = load_files(dataset_path=dataset_path)
 
@@ -130,9 +106,9 @@ if __name__ == '__main__':
     train_bags, valid_bags=Get_train_valid_set(train_bags)
     test_bags = dataset['test']
 
-    #create_dict(train_bags, level=1, train=True, patch_size=224, stride=224, csv_file=None,dict_name="train_dict")
-    #create_dict(valid_bags, level=1, train=True, patch_size=224, stride=224, csv_file=None, dict_name="valid_dict")
-    create_dict(test_bags, level=1, train=False, patch_size=224, stride=224, csv_file=csv_file, dict_name="test_dict")
+    create_dict(train_bags, csv_file=None,dict_name="train_dict")
+    create_dict(valid_bags, csv_file=None, dict_name="valid_dict")
+    create_dict(test_bags,  csv_file=csv_file, dict_name="test_dict")
 
 
 
