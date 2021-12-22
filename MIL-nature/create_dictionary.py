@@ -3,7 +3,6 @@ import numpy as np
 import random
 from wsi_op import read_wsi, find_roi_bbox
 import pandas as pd
-import cv2
 from collections import defaultdict
 import torch
 import h5py
@@ -45,17 +44,7 @@ def Get_train_valid_Path(Train_set, train_percentage=0.9):
     return Model_Train, Model_Val
 
 
-def detect_tissue(image_path):
-
-            img_name, wsi_image, rgb_image, level_used = read_wsi(image_path)
-            assert wsi_image is not None, 'Failed to read Whole Slide Image %s.' % image_path
-
-            rgba_image, bounding_boxes, rgb_contour, image_open = find_roi_bbox(rgb_image)
-
-            return wsi_image,bounding_boxes,image_open,level_used
-
-
-def load_bags(wsi_path, train):
+def load_bags(wsi_path, train,csv_file):
 
 
         class_name = os.path.basename(wsi_path).split(".")[0]
@@ -74,7 +63,7 @@ def load_bags(wsi_path, train):
 
         return coords, int(bag_label)
 
-def create_dict(filenames, level, train, patch_size, stride, dict_name,csv_file=None):
+def create_dict(filenames, train, dict_name,csv_file=None):
 
         d = defaultdict()
         file_list=[]
@@ -91,7 +80,7 @@ def create_dict(filenames, level, train, patch_size, stride, dict_name,csv_file=
             d["grid"]  = coord_list
             d["targets"]= label_list
             d["mult"]= 1
-            d["level"]= level
+            d["level"]= 1
         torch.save(d, '{}.pt'.format(dict_name))
         return d
 
@@ -106,9 +95,9 @@ if __name__ == '__main__':
     train_bags, valid_bags=Get_train_valid_set(train_bags)
     test_bags = dataset['test']
 
-    create_dict(train_bags, csv_file=None,dict_name="train_dict")
-    create_dict(valid_bags, csv_file=None, dict_name="valid_dict")
-    create_dict(test_bags,  csv_file=csv_file, dict_name="test_dict")
+    create_dict(train_bags, train=True,csv_file=None,dict_name="train_dict")
+    create_dict(valid_bags,train=True, csv_file=None, dict_name="valid_dict")
+    create_dict(test_bags, train=False,csv_file=csv_file, dict_name="test_dict")
 
 
 
