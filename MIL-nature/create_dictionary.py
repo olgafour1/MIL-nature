@@ -15,7 +15,7 @@ def load_files(dataset_path):
     --------------------
     :param dataset_path:
     :param n_folds:
-    :return: list
+    :return: list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
         List contains split datasets for K-Fold cross-validation
     """
     dataset = {}
