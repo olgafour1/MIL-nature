@@ -1,0 +1,7 @@
+MIL-nature/results/
+*.csv
+*.txt
+*.err
+MIL-nature/output_files/
+run.sh
+*.pt
