@@ -91,7 +91,7 @@ if __name__ == '__main__':
     dataset = load_files(dataset_path=dataset_path)
 
     train_bags = dataset['train']
-    train_bags, valid_bags=Get_train_valid_set(train_bags)
+    train_bags, valid_bags=Get_train_valid_Path(train_bags)
     test_bags = dataset['test']
 
     create_dict(train_bags, train=True,csv_file=None,dict_name="train_dict")
