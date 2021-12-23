@@ -62,7 +62,7 @@ def load_bags(wsi_path, train,csv_file):
                 h5_coords = hdf5_file['coords'][:]
 
 
-        return map(tuple, h5_coords), int(bag_label)
+        return list(map(tuple, h5_coords)), int(bag_label)
 
 def create_dict(filenames, train, dict_name,csv_file=None):
 
