@@ -49,10 +49,10 @@ def load_bags(wsi_path, train,csv_file):
         class_name = os.path.basename(wsi_path).split(".")[0]
         coords=[]
         if train:
-            coords_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches/"+"training"
+            coords_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches/"+"training/patches"
             bag_label=(int(1) if "tumor" in class_name else int(0))
         else:
-            coords_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches/" + "testing"
+            coords_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches/" + "testing/patches"
             references=pd.read_csv(csv_file,header=None)
             label=references[1].loc[references[0]==class_name].values.tolist()[0]
             bag_label = (int(1) if "Tumor" in label else int(0))
