@@ -60,9 +60,9 @@ def load_bags(wsi_path, train,csv_file):
         with h5py.File(os.path.join(coords_path,class_name)+".h5", "r") as hdf5_file:
 
                 h5_coords = hdf5_file['coords'][:]
-                coords.append(h5_coords)
 
-        return coords, int(bag_label)
+
+        return h5_coords, int(bag_label)
 
 def create_dict(filenames, train, dict_name,csv_file=None):
 
