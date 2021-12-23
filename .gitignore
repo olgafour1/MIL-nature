@@ -3,5 +3,5 @@ MIL-nature/results/
 *.txt
 *.err
 MIL-nature/output_files/
-run.sh
+*.sh
 *.pt
