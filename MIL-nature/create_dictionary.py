@@ -19,8 +19,8 @@ def load_files(dataset_path):
         List contains split datasets for K-Fold cross-validation
     """
     dataset = {}
-    dataset['train'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "training")) for file in files if file.endswith(".h5")]
-    dataset['test'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "testing")) for file in files if file.endswith(".h5")]
+    dataset['train'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "training")) for file in files if file.endswith(".tif")]
+    dataset['test'] = [os.path.join(root,file) for root,dirs, files in os.walk(os.path.join(dataset_path, "testing")) for file in files if file.endswith(".tif")]
 
     return dataset
 
@@ -49,13 +49,15 @@ def load_bags(wsi_path, train,csv_file):
         class_name = os.path.basename(wsi_path).split(".")[0]
         coords=[]
         if train:
+            coords_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches"+"training"
             bag_label=(int(1) if "tumor" in class_name else int(0))
         else:
+            coords_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches" + "testing"
             references=pd.read_csv(csv_file,header=None)
             label=references[1].loc[references[0]==class_name].values.tolist()[0]
             bag_label = (int(1) if "Tumor" in label else int(0))
 
-        with h5py.File(wsi_path, "r") as hdf5_file:
+        with h5py.File(os.path.join(coords_path,class_name)+".h5", "r") as hdf5_file:
 
                 h5_coords = hdf5_file['coords'][:]
                 coords.append(h5_coords)
@@ -86,7 +88,7 @@ def create_dict(filenames, train, dict_name,csv_file=None):
 if __name__ == '__main__':
 
     csv_file = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/testing/reference.csv"
-    dataset_path = "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16/Nature-2019-patches"
+    dataset_path= "/data/scratch/DBI/DUDBI/DYNCESYS/OlgaF/camelyon16"
 
     dataset = load_files(dataset_path=dataset_path)
 
