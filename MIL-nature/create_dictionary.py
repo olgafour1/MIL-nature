@@ -46,7 +46,6 @@ def Get_train_valid_Path(Train_set, train_percentage=0.9):
 
 def load_bags(wsi_path, train,csv_file):
 
-
         class_name = os.path.basename(wsi_path).split(".")[0]
         coords=[]
         if train:
